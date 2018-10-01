@@ -2,8 +2,14 @@
   "manifest_version": 2,
   "name": "Tab Freezer",
   "version": "1.1.0",
-  "description": "When Tab Freezer is active for a tab, all new tabs are closed automatically.",
+  "description": "When Tab Freezer is active for a domain, all new tabs are closed automatically.",
   "author": "lynk",
+  "applications": {
+    "gecko": {
+      "id": "tabfreezer@lynk",
+      "strict_min_version": "57.0"
+    }
+  },
   "icons": {
     "32": "icons/tabfreezer_icon_blue_32.png",
     "64": "icons/tabfreezer_icon_blue_64.png"
@@ -12,8 +18,7 @@
     "freezer-override": {
       "suggested_key": {
         "default": "Alt+1"
-      },
-      "description": "Override the tab freeze one time"
+      }
     }
   },
   "browser_action": {
@@ -30,7 +35,6 @@
   ],
   "background": {
     "scripts": [
-      "browser-polyfill.min.js",
       "tabfreezer_bg.js"
     ]
   }
