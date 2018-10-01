@@ -1,5 +1,12 @@
 'use strict';
 
+
+var browser = (function () {
+    return window.msBrowser ||
+        window.browser ||
+        window.chrome;
+})();
+
 var TF = {
     activeTabId: 0,
     freezerOverrideActive: false,
