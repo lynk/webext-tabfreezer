@@ -17,7 +17,7 @@ var TF = {
             },
             title: 'TURN OFF Freezing',
             action: 'addUrl',
-            nextState: 'on'
+            nextState: 'off'
         },
         off: {
             icon: {
@@ -51,37 +51,14 @@ var TF = {
             const currentHost = TF.getHostFromUrl(tabInfo.url);
 
             if (result.urls !== undefined && result.urls.includes(currentHost)) {
-
                 // Toggle button state on
                 TF.toggleBrowserButton(tabId, TF.browserButtonStates.off.nextState);
                 TF.startTabListening();
             }
             else {
-                //TF.toggleBrowserButton(tabId, TF.browserButtonStates.on.nextState);
+                TF.toggleBrowserButton(tabId, TF.browserButtonStates.on.nextState);
             }
         })
-    },
-
-
-    toggleBrowserButton: function (tabId, nextState) {
-
-        // toggle icon
-        browser.browserAction.setIcon({
-            tabId: tabId,
-            path: TF.browserButtonStates[nextState].icon
-        });
-
-        // toggle title
-        browser.browserAction.setTitle({
-            tabId: tabId,
-            title: TF.browserButtonStates[nextState].title
-        });
-
-        // toggle badge text
-        browser.browserAction.setBadgeText({
-            tabId: tabId,
-            text: ''
-        });
     },
 
     /**
@@ -130,6 +107,51 @@ var TF = {
         })
     },
 
+    toggleBrowserButton: function (tabId, nextState) {
+
+        // if tabId = reset, reset the buttons of all tabs
+        if (tabId != 'reset') {
+            // toggle icon
+            browser.browserAction.setIcon({
+                    tabId: tabId,
+                    path: TF.browserButtonStates[nextState].icon
+                }
+            );
+
+            // toggle title
+            browser.browserAction.setTitle({
+                tabId: tabId,
+                title: TF.browserButtonStates[nextState].title
+            });
+
+            // toggle badge text
+            browser.browserAction.setBadgeText({
+                tabId: tabId,
+                text: ''
+            });
+
+        } else {
+            // toggle icon
+            console.log("ICON RESET");
+            browser.browserAction.setIcon({
+                    path: TF.browserButtonStates[nextState].icon
+                }
+            );
+
+            // toggle title
+            browser.browserAction.setTitle({
+                title: TF.browserButtonStates[nextState].title
+            });
+
+            // toggle badge text
+            browser.browserAction.setBadgeText({
+                text: ''
+            });
+        }
+
+
+    },
+
     startTabListening: function () {
         browser.tabs.onCreated.addListener(TF.catchCreated);
     },
@@ -141,7 +163,6 @@ var TF = {
      * @param command
      */
     onKeyCommand: function (command) {
-
 
 
         if (command == 'freezer-override') {
@@ -168,7 +189,6 @@ var TF = {
     catchCreated: function (tabs) {
 
         // Don't close tab if override active
-        console.log(TF.freezerOverrideActive);
         if (TF.freezerOverrideActive === true) {
             TF.endOverride();
         }
@@ -210,6 +230,15 @@ var TF = {
     onActivatedTab: function (tabs) {
         TF.activeTabId = tabs.tabId;
         TF.endOverride();
+    },
+
+    handleMessage: function (message) {
+
+        switch (message.is) {
+            case 'reset':
+                TF.toggleBrowserButton('reset', 'off');
+                break;
+        }
     },
 
     addUrl: function (tab) {
@@ -294,3 +323,7 @@ browser.browserAction.onClicked.addListener(TF.handleBrowserClick);
 
 // Key press listener
 browser.commands.onCommand.addListener(TF.onKeyCommand);
+
+// Listen for message
+browser.runtime.onMessage.addListener(TF.handleMessage);
+
