@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Tab Freezer",
-  "version": "1.1.0",
+  "version": "1.1.8",
   "description": "When Tab Freezer is active for a tab, all new tabs are closed automatically.",
   "author": "lynk",
   "icons": {
@@ -22,7 +22,11 @@
     "default_icon": {
       "32": "icons/tabfreezer_icon_off.png"
     },
-    "default_title": "Turn Freezing ON"
+    "default_title": "TURN ON Freezing"
+  },
+  "options_ui": {
+    "page": "options/tabfreezer_options.html",
+    "open_in_tab": false
   },
   "permissions": [
     "tabs",
@@ -30,7 +34,6 @@
   ],
   "background": {
     "scripts": [
-      "browser-polyfill.min.js",
       "tabfreezer_bg.js"
     ]
   }
