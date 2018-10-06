@@ -21,7 +21,8 @@ var TF = {
         },
         off: {
             icon: {
-                32: '/icons/tabfreezer_icon_off.png'
+                32: '/icons/tabfreezer_icon_off.png',
+                64: '/icons/tabfreezer_icon_off.png',
             },
             title: 'TURN ON Freezing',
             action: 'removeUrl',
@@ -29,7 +30,8 @@ var TF = {
         },
         override: {
             icon: {
-                32: '/icons/tabfreezer_icon_green.png'
+                32: '/icons/tabfreezer_icon_green.png',
+                64: '/icons/tabfreezer_icon_green.png',
             },
             title: 'Freezing ON HOLD'
         }
@@ -96,10 +98,24 @@ var TF = {
         })
     },
 
+    /**
+     * TODO
+     *
+     * @param host
+     * @param nextState
+     */
     updateBrowserButtons: function (host, nextState) {
 
-        // Get all tabs with this host
-        browser.tabs.query({url: "*://" + host + "/*"}, function (tabs) {
+        // query for all tabs
+        let queryObj = {};
+
+        // query for tabs with this url
+        if (host != 'reset') {
+            queryObj = {url: "*://" + host + "/*"};
+        }
+
+        // Get all tabs with this query
+        browser.tabs.query(queryObj, function (tabs) {
             // Toggle plugin icon on all tabs
             Object.keys(tabs).forEach(function (key) {
                 TF.toggleBrowserButton(tabs[key].id, nextState)
@@ -109,46 +125,23 @@ var TF = {
 
     toggleBrowserButton: function (tabId, nextState) {
 
-        // if tabId = reset, reset the buttons of all tabs
-        if (tabId != 'reset') {
-            // toggle icon
-            browser.browserAction.setIcon({
-                    tabId: tabId,
-                    path: TF.browserButtonStates[nextState].icon
-                }
-            );
+        // toggle icon
+        browser.browserAction.setIcon({
+            tabId: tabId,
+            path: TF.browserButtonStates[nextState].icon
+        });
 
-            // toggle title
-            browser.browserAction.setTitle({
-                tabId: tabId,
-                title: TF.browserButtonStates[nextState].title
-            });
+        // toggle title
+        browser.browserAction.setTitle({
+            tabId: tabId,
+            title: TF.browserButtonStates[nextState].title
+        });
 
-            // toggle badge text
-            browser.browserAction.setBadgeText({
-                tabId: tabId,
-                text: ''
-            });
-
-        } else {
-            // toggle icon
-            console.log("ICON RESET");
-            browser.browserAction.setIcon({
-                    path: TF.browserButtonStates[nextState].icon
-                }
-            );
-
-            // toggle title
-            browser.browserAction.setTitle({
-                title: TF.browserButtonStates[nextState].title
-            });
-
-            // toggle badge text
-            browser.browserAction.setBadgeText({
-                text: ''
-            });
-        }
-
+        // toggle badge text
+        browser.browserAction.setBadgeText({
+            tabId: tabId,
+            text: ''
+        });
 
     },
 
@@ -236,7 +229,7 @@ var TF = {
 
         switch (message.is) {
             case 'reset':
-                TF.toggleBrowserButton('reset', 'off');
+                TF.updateBrowserButtons('reset', 'off');
                 break;
         }
     },

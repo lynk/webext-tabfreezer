@@ -22,8 +22,9 @@ function resetStorage() {
 
     browser.storage.local.set({urls: []}, function () {
         document.getElementById("tf-counter").innerHTML = '0';
+        browser.runtime.sendMessage({is: 'reset'});
     });
 
-    browser.runtime.sendMessage({is: 'reset'});
+
 
 }
