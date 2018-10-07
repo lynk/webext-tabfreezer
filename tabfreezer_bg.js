@@ -52,6 +52,8 @@ var TF = {
 
             const currentHost = TF.getHostFromUrl(tabInfo.url);
 
+            // check if storage key actually exists. it should
+            // is host in storage?
             if (result.urls !== undefined && result.urls.includes(currentHost)) {
                 // Toggle button state on
                 TF.toggleBrowserButton(tabId, TF.browserButtonStates.off.nextState);
@@ -65,37 +67,41 @@ var TF = {
 
     /**
      * This handles the click on the browser button.
-     * The title of the button acts as state
+     * The current title of the browser button represents the state
      *
      * @param tab
      */
     handleBrowserClick: function (tab) {
 
-        browser.browserAction.getTitle({tabId: tab.id}, function (result) {
+        // never activate for firefox and chrome internal pages
+        if (!tab.url.includes('about:') && !tab.url.includes('chrome:')) {
 
-            const defaultState = TF.browserButtonStates.defaultState;
+            browser.browserAction.getTitle({tabId: tab.id}, function (result) {
 
-            // get next state
-            let nextState;
+                const defaultState = TF.browserButtonStates.defaultState;
 
-            if (result == TF.browserButtonStates[defaultState].title) {
-                nextState = TF.browserButtonStates[defaultState].nextState;
-            }
-            else {
-                nextState = defaultState;
-            }
+                // get next state
+                let nextState;
 
-            // Toogle buttons
-            TF.updateBrowserButtons(TF.getHostFromUrl(tab.url), nextState);
+                if (result == TF.browserButtonStates[defaultState].title) {
+                    nextState = TF.browserButtonStates[defaultState].nextState;
+                }
+                else {
+                    nextState = defaultState;
+                }
 
-            // Call add or remove url function
-            TF[TF.browserButtonStates[nextState].action](tab);
+                // Toogle buttons
+                TF.updateBrowserButtons(TF.getHostFromUrl(tab.url), nextState);
 
-            // Toggle listening for new tabs
-            if (nextState != defaultState) {
-                TF.startTabListening();
-            }
-        })
+                // Call add or remove url function
+                TF[TF.browserButtonStates[nextState].action](tab);
+
+                // Toggle listening for new tabs
+                if (nextState != defaultState) {
+                    TF.startTabListening();
+                }
+            });
+        }
     },
 
     /**
@@ -221,10 +227,16 @@ var TF = {
     },
 
     onActivatedTab: function (tabs) {
+
         TF.activeTabId = tabs.tabId;
         TF.endOverride();
     },
 
+    /**
+     * Handle incoming messages
+     *
+     * @param message
+     */
     handleMessage: function (message) {
 
         switch (message.is) {
