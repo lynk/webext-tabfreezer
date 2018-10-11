@@ -11,8 +11,9 @@
   "commands": {
     "freezer-override": {
       "suggested_key": {
-        "default": "Alt+1",
-        "linux": "Ctrl+1"
+        "default": "Ctrl+Space",
+        "linux": "Ctrl+Space",
+        "mac": "MacCtrl+Space"
       },
       "description": "Override the tab freeze one time"
     }

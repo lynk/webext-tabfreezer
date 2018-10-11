@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Tab Freezer",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "When Tab Freezer is active for a domain, all new tabs are closed automatically.",
   "author": "lynk",
   "applications": {
@@ -17,9 +17,9 @@
   "commands": {
     "freezer-override": {
       "suggested_key": {
-        "default": "Alt+1",
-        "linux": "Ctrl+1"
-
+        "default": "Ctrl+Space",
+        "linux": "Ctrl+Space",
+        "mac": "MacCtrl+Space"
       }
     }
   },
