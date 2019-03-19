@@ -6,7 +6,8 @@ var browser = (function () {
 })();
 
 var TF = {
-    activeTabId: 0,
+    freezeHosts: [],
+    ranOnce: false,
     freezerOverrideActive: false,
     browserButtonStates: {
         defaultState: 'off',
@@ -46,23 +47,23 @@ var TF = {
      */
     onUpdatedTab: function (tabId, changeInfo = '', tabInfo = '') {
 
-        // TODO: I want this to run only once
-        //check if host is in storage
+        const currentHost = TF.getHostFromUrl(tabInfo.url);
+
+        if (TF.freezeHosts !== undefined && TF.freezeHosts.includes(currentHost)) {
+            // Toggle button state on
+            TF.toggleBrowserButton(tabId, TF.browserButtonStates.off.nextState);
+            TF.startTabListening();
+        }
+        else {
+            TF.toggleBrowserButton(tabId, TF.browserButtonStates.on.nextState);
+        }
+    },
+
+    updateHosts: () => {
+
         browser.storage.local.get(["urls"], function (result) {
-
-            const currentHost = TF.getHostFromUrl(tabInfo.url);
-
-            // check if storage key actually exists. it should
-            // is host in storage?
-            if (result.urls !== undefined && result.urls.includes(currentHost)) {
-                // Toggle button state on
-                TF.toggleBrowserButton(tabId, TF.browserButtonStates.off.nextState);
-                TF.startTabListening();
-            }
-            else {
-                TF.toggleBrowserButton(tabId, TF.browserButtonStates.on.nextState);
-            }
-        })
+            TF.freezeHosts = result.urls;
+        });
     },
 
     /**
@@ -90,7 +91,7 @@ var TF = {
                     nextState = defaultState;
                 }
 
-                // Toogle buttons
+                // Toggle buttons on all taby
                 TF.updateBrowserButtons(TF.getHostFromUrl(tab.url), nextState);
 
                 // Call add or remove url function
@@ -104,15 +105,8 @@ var TF = {
         }
     },
 
-    /**
-     * TODO
-     *
-     * @param host
-     * @param nextState
-     */
     updateBrowserButtons: function (host, nextState) {
 
-        // query for all tabs
         let queryObj = {};
 
         // query for tabs with this url
@@ -152,7 +146,16 @@ var TF = {
     },
 
     startTabListening: function () {
-        browser.tabs.onCreated.addListener(TF.catchCreated);
+
+        // catch All
+        // If Listener is active
+        if (browser.webNavigation.onCreatedNavigationTarget.hasListener(TF.catchCreatedAny) === true) {
+
+        }
+        else {
+            browser.webNavigation.onCreatedNavigationTarget.addListener(TF.catchCreatedAny);
+        }
+
     },
 
     /**
@@ -162,7 +165,6 @@ var TF = {
      * @param command
      */
     onKeyCommand: function (command) {
-
 
         if (command == 'freezer-override') {
 
@@ -176,41 +178,83 @@ var TF = {
     },
 
     startOverride: function () {
-
         TF.freezerOverrideActive = true;
+
+        // TODO: check and end
+        setTimeout(()=> {
+            TF.endOverride();
+        }, 6000)
     },
 
     endOverride: function () {
-
         TF.freezerOverrideActive = false;
     },
 
-    catchCreated: function (tabs) {
+    catchCreatedTab: function (tabwindow) {
 
-        // Don't close tab if override active
-        if (TF.freezerOverrideActive === true) {
+        if (tabwindow.hasOwnProperty('alwaysOnTop')) {
+
+            browser.tabs.query({
+                windowId: tabwindow.id
+            }, function (res) {
+
+            });
+
+
+        }
+        else {
+
+            var tabs = tabwindow;
+
+            // TODO: chrome: chrome runs this multi tab for evey new tab
+            // TODO: the override flag is reset to early for chrome
+
+            // Don't close tab if override active
+            if (TF.freezerOverrideActive === true) {
+                TF.endOverride();
+            }
+            else {
+                // Check if the opener tab of the new tab is freezed (by the icon title)
+                browser.browserAction.getTitle({tabId: tabs.openerTabId}, function (title) {
+                    if (title == TF.browserButtonStates.on.title) {
+
+                        // Remove listener temporarily to prevent core errors
+                        //browser.tabs.onUpdated.removeListener(TF.onUpdatedTab);
+                        TF.closeTab(tabs.id);
+
+                        TF.incremBadge(tabs.openerTabId);
+                    }
+                })
+            }
+        }
+
+    },
+
+    catchCreatedAny: function (details) {
+
+        // Don't close popup if override active
+        if (TF.freezerOverrideActive == true) {
             TF.endOverride();
         }
         else {
-            // Check if the opener tab of the new tab is freezed (by the icon title)
-            browser.browserAction.getTitle({tabId: tabs.openerTabId}, function (title) {
+            // Check if the opener tab of the new popup is freezed (by the icon title)
+            browser.browserAction.getTitle({tabId: details.sourceTabId}, function (title) {
                 if (title == TF.browserButtonStates.on.title) {
 
                     // Remove listener temporarily to prevent core errors
                     //browser.tabs.onUpdated.removeListener(TF.onUpdatedTab);
-                    TF.closeTab(tabs.id);
-
-                    TF.incremBadge(tabs.openerTabId);
+                    TF.closeTab(details.tabId);
+                    TF.incremBadge(details.sourceTabId);
                 }
             })
         }
-
 
     },
 
     incremBadge: function (tabId) {
 
         browser.browserAction.getBadgeText({tabId: tabId}, function (text) {
+
             if (text !== '') {
                 browser.browserAction.setBadgeText({tabId: tabId, text: (++text).toString()});
             } else {
@@ -222,14 +266,9 @@ var TF = {
     closeTab: function (tabId) {
 
         browser.tabs.remove(tabId, TF.onError);
+
         //re-add listener
         //browser.tabs.onUpdated.addListener(TF.onUpdatedTab);
-    },
-
-    onActivatedTab: function (tabs) {
-
-        TF.activeTabId = tabs.tabId;
-        TF.endOverride();
     },
 
     /**
@@ -254,51 +293,62 @@ var TF = {
             result.urls.push(host);
             const newUrls = [...new Set(result.urls.map(a => a))];
 
-            browser.storage.local.set({urls: newUrls});
+            TF.setUrls(newUrls);
         });
     },
 
     removeUrl: function (tab) {
 
         browser.storage.local.get(["urls"], function (result) {
+
             const currentHost = TF.getHostFromUrl(tab.url);
             const newUrls = result.urls.filter(host => host != currentHost);
-            browser.storage.local.set({urls: newUrls});
 
+            TF.setUrls(newUrls);
         });
     },
 
-    /**
-     * Some stackoverflow magic: get hostname of URL with
-     * the location hostname property
-     *
-     * @param fullUrl
-     * @returns {string}
-     */
+    setUrls: (newUrls) => {
+
+        browser.storage.local.set({urls: newUrls}, () => {
+
+            // Update context menu host pattern
+            TF.updateContextMenus();
+
+            // Update freeze hostlist
+            TF.updateHosts();
+        });
+    },
+
     getHostFromUrl: function (fullUrl) {
+        /**
+         * Some stackoverflow magic: get hostname of URL with
+         * the location hostname property
+         *
+         * @param fullUrl
+         * @returns {string}
+         */
         const a = document.createElement('a');
         a.href = fullUrl;
         return a.hostname;
     },
 
-    /**
-     * On install: set up storage, counter
-     * counter currently unused
-     */
     onInstall: function (details) {
-
+        /**
+         * On install: set up storage
+         */
         switch (details.reason) {
-            case 'install':
 
+            case 'install':
                 browser.storage.local.get(['urls'], function (results) {
 
-                    if (Object.keys(results).length === 0) {
+                    if (Object.keys(results).length == 0) {
                         browser.storage.local.set({
-                            urls: [],
-                            counter: 0
+                            urls: []
                         });
                     }
                 });
+
                 break;
         }
     },
@@ -309,19 +359,77 @@ var TF = {
             console.log(browser.runtime.lastError);
 
         }
+    },
+
+    updateContextMenus: () => {
+
+        // get urls
+        browser.storage.local.get(["urls"], function (result) {
+
+            if (result.urls !== undefined) {
+
+                let hostlist = [];
+
+                // Iterate result obj and build array
+                for (const [key, value] of Object.entries(result.urls)) {
+                    hostlist.push('*://' + value + '/*');
+                }
+
+                // if hostlist is empty, set visi to 0, menu would show otherwise
+                let visibility = (hostlist.length == 0 ? false : true);
+
+                browser.contextMenus.update(
+                    "open-link-in-tab",
+                    {
+                        documentUrlPatterns: hostlist,
+                        visible: visibility
+                    });
+            }
+        });
+    },
+
+    clickedContextMenu: (info, tab) => {
+
+        switch (info.menuItemId) {
+
+            case "open-link-in-tab":
+                browser.tabs.create({
+                    url: info.linkUrl,
+                    index: tab.index + 1
+                });
+
+                break;
+        }
+    },
+
+    init: () => {
+
+        // Initialize context menus, hide it
+        browser.contextMenus.create({
+            id: "open-link-in-tab",
+            title: "Open link in new tab",
+            contexts: ["link"],
+            onclick: TF.clickedContextMenu
+        }, ()=> {
+            //callback; update with url patterns
+            TF.updateContextMenus();
+        });
+
+        TF.updateHosts();
     }
+
 };
 
-// Listeners
+
+// Initialize stuff
+TF.init();
+
 
 // Browser startup listener
 browser.runtime.onInstalled.addListener(TF.onInstall);
 
 // Tab being updated listener
 browser.tabs.onUpdated.addListener(TF.onUpdatedTab);
-
-// Tab activated/focused
-browser.tabs.onActivated.addListener(TF.onActivatedTab);
 
 // Browser button listener
 browser.browserAction.onClicked.addListener(TF.handleBrowserClick);
@@ -331,4 +439,3 @@ browser.commands.onCommand.addListener(TF.onKeyCommand);
 
 // Listen for message
 browser.runtime.onMessage.addListener(TF.handleMessage);
-
