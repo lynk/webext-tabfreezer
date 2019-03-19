@@ -6,14 +6,17 @@ It is written with Chrome's callback API style which is also supported by Firefo
 
 Each browser has a different manifest.json template.
 
-Feature: All new tabs opened by blacklisted domains are closed automatically.
+*Summary:* All new tabs and popups opened by blacklisted domains are closed automatically.
 
-https://addons.mozilla.org/en-US/firefox/addon/tab-freezer/
+This add-on is able to block popups and ad-links where other ad-blockers "fail". Some sites put invsible layers over links, media control buttons and even full web pages to trick you on clicking in them. For browsers and ad-blockers those are legitimate links and clicks that won't be blocked.
+
+With Tab Freezer you can block those popups. Just activate Tab Freezer on the page it is happening and all opened popups,tabs and windows are closed automatically.
 
 
-The Chrome extension is available here:
-https://chrome.google.com/webstore/detail/tab-freezer/ghboalniiaeppganfgbbdejcmjcfcjgh
 
-but its use is somewhat limited, because Chrome is not able to force all links into tabs,
-so you will have some popup windows.
+Firefox: https://addons.mozilla.org/en-US/firefox/addon/tab-freezer/
+
+Chrome: https://chrome.google.com/webstore/detail/tab-freezer/ghboalniiaeppganfgbbdejcmjcfcjgh
+
+
 
