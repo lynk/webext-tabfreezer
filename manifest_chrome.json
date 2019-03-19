@@ -1,8 +1,8 @@
 {
   "manifest_version": 2,
   "name": "Tab Freezer",
-  "version": "1.2.0",
-  "description": "When Tab Freezer is active for a tab, all new tabs are closed automatically.",
+  "version": "1.3.0 ",
+  "description": "Close popups and tabs automatically opened by sites you flag with Tab Freezer",
   "author": "lynk",
   "icons": {
     "32": "icons/tabfreezer_icon_blue_32.png",
@@ -32,7 +32,9 @@
   },
   "permissions": [
     "tabs",
-    "storage"
+    "storage",
+    "webNavigation",
+    "contextMenus"
   ],
   "background": {
     "scripts": [
